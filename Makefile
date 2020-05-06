@@ -1,48 +1,36 @@
-.PHONY: once spell compilecheck fmtcheck
+# This file copie and modified from https://github.com/miekg/learninggo/blob/master/Makefile
+MMARK=mmark
 
-all:	go.pdf
+all: learninggo.html
 
-go.pdf: go-*.tex ex-*/*.tex src/*.go tab/*.tex fig/*.tex blocksbook.cls go.bib .fig .tab about-*.tex
-	rm -f go.tex && ln -s go_a4.tex go.tex
-	xelatex go.tex && bibtex go && makeindex go \
-	&& xelatex go.tex && xelatex go.tex
+.PHONY: learninggo.html
+learninggo.html:
+	$(MMARK) -html -head inc/head.html -css inc/book.css learninggo.md > learninggo.html
 
-go-kindle.pdf: go-*.tex ex-*/*.tex src/*.go tab/*.tex fig/*.tex blocksbook.cls go.bib .fig .tab about-*.tex
-	rm -f go.tex && ln -s go_kindle.tex go.tex
-	xelatex go.tex && bibtex go && makeindex go \
-	&& xelatex go.tex && xelatex go.tex
-	mv go.pdf go-kindle.pdf
+.PHONY: learninggo.xml
+learninggo.xml:
+	$(MMARK) learninggo.md > learninggo.xml
 
-.fig:	fig/*.svg
-	( cd fig; make all )
-	touch .fig
+.PHONY: learninggo.txt
+learninggo.txt: learninggo.xml
+	xml2rfc --v3 learninggo.xml
 
-.tab:	
-	( cd tab; make all )
-	touch .tab
+.PHONY: learninggo-2.xml
+learninggo-2.xml:
+	$(MMARK) -2 learninggo.md > learninggo-2.xml
+
+.PHONY: learninggo-2.txt
+learninggo-2.txt: learninggo-2.xml
+	@# Using -n because it doesn't fully validate (RFC7749 is a limited format).
+	xml2rfc -n learninggo-2.xml
+
+.PHONY: ast
+ast:
+	$(MMARK) -ast learninggo.md
+
+.PHONY: test
+test:
+	$(MMARK) -html learninggo.md
 
 clean:
-	rm -f go.lol go.aux *.log map.log go.pdf go.bbl go.blg go.toc go.ind go.lot go.lof go.loe
-	rm -f go.ilg go.idx go.lgpl missfont.log doc_data.txt go.ex .fig .tab
-	rm -f go.code
-
-distclean: clean
-	( cd fig; make clean )
-	( cd tab; make clean )
-	( cd src; make clean )
-
-spell:
-	for i in *.tex ex-*/*.tex; do aspell check $$i; done
-once:	
-	xelatex go.tex
-
-compilecheck:
-	@bin/go-lstinputlisting.pl ~/git/gobook   *.tex
-	@bin/go-lstinputlisting.pl ~/git/gobook   ex-*/*.tex
-	@bin/go-lstinputlisting.pl ~/git/gobook   fig/*.tex
-	@rm -f *.6 *.8
-
-fmtcheck:
-	@bin/go-lstlisting.pl *.tex
-	@bin/go-lstlisting.pl ex-*/*.tex
-	@bin/go-lstlisting.pl fig/*.tex
+	rm -f learninggo.html
